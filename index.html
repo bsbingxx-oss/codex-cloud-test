@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>덧셈 계산기</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #172337;
+        background: #f3f6fb;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      main {
+        width: min(100%, 420px);
+        padding: clamp(24px, 6vw, 36px);
+        border: 1px solid #e1e8f1;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 16px 48px rgba(27, 48, 80, .08);
+      }
+
+      h1 { margin: 0 0 8px; font-size: 1.7rem; }
+      p { margin: 0 0 28px; color: #5d6b7d; line-height: 1.5; }
+      label { display: block; margin-bottom: 8px; font-weight: 600; }
+      .field { margin-bottom: 20px; }
+
+      input, button {
+        width: 100%;
+        min-height: 48px;
+        border-radius: 10px;
+        font: inherit;
+      }
+
+      input {
+        padding: 10px 14px;
+        border: 1px solid #b9c6d6;
+        background: #fff;
+      }
+
+      input:focus-visible, button:focus-visible {
+        outline: 3px solid #92b7ff;
+        outline-offset: 2px;
+      }
+
+      button {
+        border: 0;
+        background: #245bd6;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover { background: #1949b5; }
+
+      .result {
+        min-height: 68px;
+        margin-top: 24px;
+        padding: 16px;
+        border-radius: 10px;
+        background: #eef4ff;
+        line-height: 1.5;
+      }
+
+      .result strong { display: block; font-size: 1.35rem; overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>덧셈 계산기</h1>
+      <p>두 숫자를 입력하고 합계를 확인하세요.</p>
+      <form id="calculator">
+        <div class="field">
+          <label for="first">첫 번째 숫자</label>
+          <input id="first" name="first" type="number" step="any" inputmode="decimal" required />
+        </div>
+        <div class="field">
+          <label for="second">두 번째 숫자</label>
+          <input id="second" name="second" type="number" step="any" inputmode="decimal" required />
+        </div>
+        <button type="submit">계산하기</button>
+      </form>
+      <div class="result" role="status" aria-live="polite">
+        <span>결과</span>
+        <strong id="answer">숫자를 입력해 주세요.</strong>
+      </div>
+    </main>
+    <script>
+      const form = document.querySelector("#calculator");
+      const answer = document.querySelector("#answer");
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const first = Number(form.elements.first.value);
+        const second = Number(form.elements.second.value);
+        const sum = first + second;
+        answer.textContent = Number.isFinite(sum)
+          ? new Intl.NumberFormat("ko-KR", { maximumFractionDigits: 15 }).format(sum)
+          : "계산할 수 있는 숫자를 입력해 주세요.";
+      });
+    </script>
+  </body>
+</html>
