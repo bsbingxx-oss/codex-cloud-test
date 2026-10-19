@@ -1,0 +1,45 @@
+
+name: Auto Create Codex PR
+
+on:
+  push:
+    branches:
+      - 'codex/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create PR if needed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+        run: |
+          if [[ "$HEAD_BRANCH" != codex/* ]]; then
+            echo "Not a Codex branch. Skipping."
+            exit 0
+          fi
+
+          existing=$(gh pr list \
+            --head "$HEAD_BRANCH" \
+            --base main \
+            --state open \
+            --json number \
+            --jq 'length')
+
+          if [[ "$existing" -gt 0 ]]; then
+            echo "PR already exists."
+            exit 0
+          fi
+
+          gh pr create \
+            --base main \
+            --head "$HEAD_BRANCH" \
+            --title "Auto: $HEAD_BRANCH" \
+            --body "Codex Cloud 작업 변경 사항입니다. 검토 후 병합하세요."
