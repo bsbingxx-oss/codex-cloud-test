@@ -53,7 +53,6 @@ jobs:
       - name: Limit automatic merge to calculator-only changes
         id: eligible
         run: |
-          git fetch origin main --no-tags
           changed_files=$(git diff --name-only origin/main...HEAD)
           if [[ "$changed_files" == "index.html" ]]; then
             echo "merge=true" >> "$GITHUB_OUTPUT"
