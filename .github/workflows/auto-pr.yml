@@ -1,5 +1,5 @@
 
-name: Auto Create Codex PR
+name: Auto Create and Verify Codex PR
 
 on:
   push:
@@ -8,24 +8,30 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
+
+concurrency:
+  group: codex-pr-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   create-pr:
+    if: github.repository == 'bsbingxx-oss/codex-cloud-test' && startsWith(github.ref, 'refs/heads/codex/')
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the pushed commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Create PR if needed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           HEAD_BRANCH: ${{ github.ref_name }}
         run: |
-          if [[ "$HEAD_BRANCH" != codex/* ]]; then
-            echo "Not a Codex branch. Skipping."
-            exit 0
-          fi
-
           existing=$(gh pr list \
             --head "$HEAD_BRANCH" \
             --base main \
@@ -43,3 +49,39 @@ jobs:
             --head "$HEAD_BRANCH" \
             --title "Auto: $HEAD_BRANCH" \
             --body "Codex Cloud 작업 변경 사항입니다. 검토 후 병합하세요."
+
+      - name: Limit automatic merge to calculator-only changes
+        id: eligible
+        run: |
+          git fetch origin main --no-tags
+          changed_files=$(git diff --name-only origin/main...HEAD)
+          if [[ "$changed_files" == "index.html" ]]; then
+            echo "merge=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Automatic merge skipped; changed files: $changed_files"
+            echo "merge=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        if: steps.eligible.outputs.merge == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install browser test dependencies
+        if: steps.eligible.outputs.merge == 'true'
+        run: |
+          python -m pip install playwright==1.62.0
+          python -m playwright install --with-deps chromium
+
+      - name: Verify calculator in Chromium
+        if: steps.eligible.outputs.merge == 'true'
+        run: python tests/check_calculator.py
+
+      - name: Merge the verified commit
+        if: steps.eligible.outputs.merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+        run: gh pr merge "$HEAD_BRANCH" --squash --match-head-commit "$GITHUB_SHA"
